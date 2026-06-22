@@ -174,6 +174,3 @@ Render with [PlantUML](https://plantuml.com/) or the IntelliJ PlantUML plugin.
 
 ---
 
-## Author
-Mini Project 1 — El Habib Nfaoui  
-Course: Java Network Programming
