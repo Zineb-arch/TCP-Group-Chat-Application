@@ -1,0 +1,65 @@
+@startuml GroupChat_SequenceDiagram
+
+skinparam backgroundColor #1e1e2e
+skinparam sequenceParticipantBackgroundColor #2a2a3e
+skinparam sequenceParticipantBorderColor #6c63ff
+skinparam sequenceArrowColor #aaaacc
+skinparam sequenceLifeLineBorderColor #44446a
+skinparam fontColor #e0e0e0
+skinparam noteBorderColor #6c63ff
+skinparam noteBackgroundColor #252538
+
+title TCP Group Chat — Message Flow Sequence Diagram
+
+participant "Client A\n(JavaFX)" as CA
+participant "ClientModel A" as CMA
+participant "ServerSocket\n(port 3000)" as SS
+participant "ClientHandler A\n(Thread)" as CHA
+participant "ServerModel" as SM
+participant "ClientHandler B\n(Thread)" as CHB
+participant "Client B\n(JavaFX)" as CB
+
+== Connection Phase ==
+
+CA -> CMA : connect("Alice")
+CMA -> SS : new Socket(host, 3000)
+SS -> CHA : accept() → new ClientHandler(socket)
+note right of CHA : New thread spawned
+CHA -> CMA : readline() ← "Alice"
+CHA -> SM : addClient(this)
+CHA -> CMA : println("Welcome, Alice!")
+CMA -> CA : onConnected()
+CA -> CA : showChatScreen()
+
+== Messaging Phase ==
+
+CA -> CMA : sendMessage("Hello everyone!")
+CMA -> CHA : TCP stream → "Hello everyone!"
+CHA -> SM : broadcast("[10:30:15] Alice: Hello everyone!", senderA)
+SM -> CHB : sendMessage("[10:30:15] Alice: Hello everyone!")
+CHB -> CB : TCP stream → message
+CB -> CB : appendMessage(...)
+
+note over CHA, SM : Message echoed back to sender too
+
+== allUsers Command ==
+
+CA -> CMA : sendMessage("allUsers")
+CMA -> CHA : TCP stream → "allUsers"
+CHA -> SM : getActiveUsernames()
+SM -> CHA : "Alice, Bob"
+CHA -> CMA : println("[SERVER] Active users: Alice, Bob")
+CMA -> CA : onMessageReceived(...)
+
+== Disconnection Phase ==
+
+CA -> CMA : sendMessage("bye")
+CMA -> CHA : TCP stream → "bye"
+CHA -> SM : removeClient(this)
+SM -> CHB : broadcast("Alice has left the chat.")
+CHB -> CB : TCP stream → message
+CHA -> CMA : socket closed
+CMA -> CA : onDisconnected()
+CA -> CA : showDisconnectedState()
+
+@enduml

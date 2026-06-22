@@ -1,0 +1,85 @@
+@startuml GroupChat_DeploymentDiagram
+
+skinparam backgroundColor #1e1e2e
+skinparam nodeBackgroundColor #2a2a3e
+skinparam nodeBorderColor #6c63ff
+skinparam componentBackgroundColor #252538
+skinparam componentBorderColor #44446a
+skinparam arrowColor #aaaacc
+skinparam fontColor #e0e0e0
+
+title TCP Group Chat — Deployment Diagram
+
+node "Server Machine" <<Device>> {
+    node "JVM — TCPServer" <<ExecutionEnvironment>> {
+        component "ServerApp\n(JavaFX)" as SA
+        component "ServerController" as SC
+        component "ServerModel" as SM
+        component "ClientHandler\n(Thread per client)" as CH
+        component "server.properties" as SP <<configuration>>
+        database "Active Client List" as ACL
+    }
+    port "TCP Port 3000" as P3000
+}
+
+node "Client Machine A" <<Device>> {
+    node "JVM — TCPClient A" <<ExecutionEnvironment>> {
+        component "ClientApp A\n(JavaFX)" as CA
+        component "ClientController A" as CC_A
+        component "ClientModel A" as CM_A
+        component "client.properties" as CP_A <<configuration>>
+    }
+}
+
+node "Client Machine B" <<Device>> {
+    node "JVM — TCPClient B" <<ExecutionEnvironment>> {
+        component "ClientApp B\n(JavaFX)" as CB
+        component "ClientController B" as CC_B
+        component "ClientModel B" as CM_B
+        component "client.properties" as CP_B <<configuration>>
+    }
+}
+
+node "Client Machine C" <<Device>> {
+    node "JVM — TCPClient C (Read-Only)" <<ExecutionEnvironment>> {
+        component "ClientApp C\n(JavaFX)" as CC
+        component "ClientController C" as CC_C
+        component "ClientModel C" as CM_C
+    }
+}
+
+' Internal server wiring
+SA --> SC
+SC --> SM
+SM --> CH
+SM --> ACL
+SP ..> SM : loads config
+
+' Internal client wiring
+CA --> CC_A
+CC_A --> CM_A
+CP_A ..> CM_A : loads config
+
+CB --> CC_B
+CC_C --> CM_C
+CP_B ..> CM_B : loads config
+
+' Network connections
+CM_A --> P3000 : TCP/IP Socket\n(java.net.Socket)
+CM_B --> P3000 : TCP/IP Socket\n(java.net.Socket)
+CM_C --> P3000 : TCP/IP Socket\n(java.net.Socket, Read-Only)
+P3000 --> CH
+
+note right of CH
+  One thread per connection.
+  Receives messages, formats
+  with username + timestamp,
+  broadcasts to all clients.
+end note
+
+note bottom of CM_A
+  CLI args override config:
+  java TCPClient <host> <port>
+end note
+
+@enduml

@@ -1,0 +1,61 @@
+@startuml GroupChat_UseCaseDiagram
+
+skinparam backgroundColor #1e1e2e
+skinparam usecaseBackgroundColor #2a2a3e
+skinparam usecaseBorderColor #6c63ff
+skinparam actorBackgroundColor #252538
+skinparam actorBorderColor #aaaacc
+skinparam arrowColor #aaaacc
+skinparam fontColor #e0e0e0
+
+title TCP Group Chat — Use Case Diagram
+
+left to right direction
+
+actor "Regular User" as RU
+actor "Read-Only User" as RO
+actor "Server Admin" as SA
+
+rectangle "TCP Group Chat System" {
+    usecase "Connect with Username" as UC1
+    usecase "Connect as Read-Only" as UC2
+    usecase "Send Message" as UC3
+    usecase "Receive Messages" as UC4
+    usecase "Query Active Users\n(allUsers)" as UC5
+    usecase "Disconnect\n(bye / end)" as UC6
+    usecase "View Connected Clients" as UC7
+    usecase "View Server Log" as UC8
+    usecase "Start Server" as UC9
+    usecase "Auto-broadcast Message" as UC10
+}
+
+RU --> UC1
+RU --> UC3
+RU --> UC4
+RU --> UC5
+RU --> UC6
+
+RO --> UC2
+RO --> UC4
+RO --> UC5
+RO --> UC6
+
+SA --> UC9
+SA --> UC7
+SA --> UC8
+
+UC3 ..> UC10 : <<includes>>
+
+note right of UC2
+  Connecting without a username
+  restricts user to read-only mode;
+  sending is disabled in UI.
+end note
+
+note right of UC10
+  Server formats message with
+  sender name + timestamp and
+  distributes to all other clients.
+end note
+
+@enduml

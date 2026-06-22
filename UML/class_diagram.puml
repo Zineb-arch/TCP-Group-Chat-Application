@@ -1,0 +1,165 @@
+@startuml GroupChat_ClassDiagram
+
+skinparam backgroundColor #1e1e2e
+skinparam classBackgroundColor #2a2a3e
+skinparam classBorderColor #6c63ff
+skinparam classArrowColor #aaaacc
+skinparam classFontColor #e0e0e0
+skinparam classFontSize 13
+skinparam packageBackgroundColor #252538
+skinparam packageBorderColor #44446a
+
+title TCP Group Chat — Class Diagram
+
+package "TCPServer" {
+
+    package "server.model" {
+        class ServerModel {
+            - serverSocket : ServerSocket
+            - clients : List<ClientHandler>
+            - port : int
+            - onLog : Consumer<String>
+            - onClientUpdate : BiConsumer<String,Boolean>
+            - onStarted : Runnable
+            + startServer() : void
+            + addClient(handler) : void
+            + removeClient(handler) : void
+            + broadcast(message, sender) : void
+            + getActiveUsernames() : String
+            + loadConfig() : void
+        }
+
+        class ClientHandler {
+            - socket : Socket
+            - serverModel : ServerModel
+            - out : PrintWriter
+            - in : BufferedReader
+            - username : String
+            - readOnly : boolean
+            - onLog : Consumer<String>
+            - onClientUpdate : BiConsumer<String,Boolean>
+            + run() : void
+            + sendMessage(msg) : void
+            + getUsername() : String
+            - disconnect() : void
+        }
+
+        ClientHandler "many" --> "1" ServerModel : uses
+        ServerModel "1" o--> "many" ClientHandler : manages
+    }
+
+    package "server.controller" {
+        class ServerController {
+            - model : ServerModel
+            - view : ServerView
+            + setView(view) : void
+            + startServer() : void
+            + getPort() : int
+        }
+    }
+
+    package "server.view" {
+        class ServerView {
+            - controller : ServerController
+            - clientListView : ListView
+            - logArea : TextArea
+            - statusLabel : Label
+            - userColors : Map<String,String>
+            + buildUI(stage) : void
+            + appendLog(message) : void
+            + addClient(username) : void
+            + removeClient(username) : void
+            + setServerOnline(online) : void
+        }
+    }
+
+    class ServerApp {
+        + start(stage) : void
+        + main(args) : void
+    }
+
+    ServerApp --> ServerController
+    ServerApp --> ServerView
+    ServerController --> ServerModel
+    ServerController --> ServerView
+    ServerView --> ServerController
+}
+
+package "TCPClient" {
+
+    package "client.model" {
+        class ClientModel {
+            - socket : Socket
+            - out : PrintWriter
+            - in : BufferedReader
+            - serverHost : String
+            - serverPort : int
+            - username : String
+            - connected : boolean
+            - readOnly : boolean
+            - onMessageReceived : Consumer<String>
+            - onStatusChange : Consumer<String>
+            - onConnected : Runnable
+            - onDisconnected : Runnable
+            + connect(username) : void
+            + sendMessage(msg) : void
+            + disconnect() : void
+            + loadConfig() : void
+            + setServerAddress(host, port) : void
+        }
+    }
+
+    package "client.controller" {
+        class ClientController {
+            - model : ClientModel
+            - view : ClientView
+            + setView(view) : void
+            + connect(username) : void
+            + sendMessage(msg) : void
+            + disconnect() : void
+            + isReadOnly() : boolean
+        }
+    }
+
+    package "client.view" {
+        class ClientView {
+            - controller : ClientController
+            - chatArea : TextArea
+            - messageField : TextField
+            - sendButton : Button
+            - statusLabel : Label
+            + buildUI(stage) : void
+            + appendMessage(msg) : void
+            + setStatus(status) : void
+            + onConnected(readOnly) : void
+            + onDisconnected() : void
+            - showLoginScreen() : void
+            - buildChatScreen(readOnly) : void
+        }
+    }
+
+    class ClientApp {
+        + start(stage) : void
+        + main(args) : void
+    }
+
+    ClientApp --> ClientController
+    ClientApp --> ClientView
+    ClientController --> ClientModel
+    ClientController --> ClientView
+    ClientView --> ClientController
+}
+
+note bottom of ClientModel
+  Loads config from client.properties
+  (server.host, server.port)
+  Can be overridden by CLI args
+end note
+
+note bottom of ServerModel
+  Loads config from server.properties
+  (server.port)
+  Thread-per-connection model
+end note
+
+@enduml
